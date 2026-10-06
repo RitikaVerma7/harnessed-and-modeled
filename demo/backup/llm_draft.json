@@ -1,0 +1,222 @@
+[
+  {
+    "agent": "AskBot",
+    "description": "HR help agent that searches the HR policy wiki, looks up payroll records, reads the hr-help@ shared inbox, and reads HR help-desk Jira tickets. It keeps a persistent memory shared across users.",
+    "model": {
+      "name": "AskBot LLM",
+      "provider": "unknown (hosted provider)",
+      "hosting": "third-party",
+      "system_prompt": "prompts/askbot_system.md (contents not provided)"
+    },
+    "user": {
+      "name": "Employee",
+      "boundary": "Corporate Network"
+    },
+    "memory": {
+      "persistent": true,
+      "write_policy": "none"
+    },
+    "tools": [
+      {
+        "name": "hr_policy_search",
+        "backend": "HR Policy Wiki (Confluence space HR)",
+        "backend_type": "datastore",
+        "boundary": "Internal Systems",
+        "untrusted_input": true,
+        "sensitive_data": true,
+        "external_action": false,
+        "approval": "none",
+        "reason": "agent.py: 'Search the internal HR policy wiki (Confluence space HR)'. The files do not say who can edit the wiki pages, so I assume many authors can write them and tag the input as untrusted. HR pages may contain non-public internal data, so sensitive_data is true. The tool is read-only, so external_action is false. REQUIRE_CONFIRMATION = [] means there is no approval step."
+      },
+      {
+        "name": "payroll_lookup",
+        "backend": "Payroll DB",
+        "backend_type": "datastore",
+        "boundary": "Internal Systems",
+        "untrusted_input": false,
+        "sensitive_data": true,
+        "external_action": false,
+        "approval": "none",
+        "reason": "agent.py: 'Return salary, bank account and pay stubs for an employee from the Payroll DB'. This is highly sensitive PII. The comment 'any employee_id is accepted; the tool runs with AskBot's service account' shows there is no per-user access control. The tool is read-only. The data comes from an internal DB, but the employee_id parameter can be steered by injected content. REQUIRE_CONFIRMATION = [] means there is no approval step."
+      },
+      {
+        "name": "read_email",
+        "backend": "hr-help@ shared inbox (email)",
+        "backend_type": "external",
+        "boundary": "Internet",
+        "untrusted_input": true,
+        "sensitive_data": true,
+        "external_action": false,
+        "approval": "none",
+        "reason": "agent.py: 'Anyone, including people outside the company, can email this address.' Outsiders control the content, so this is a prompt-injection source. HR inbox messages likely contain employee PII. The tool reads only. REQUIRE_CONFIRMATION = [] means there is no approval step."
+      }
+    ],
+    "mcp_servers": [
+      {
+        "name": "jira-mcp",
+        "version": "1.4.2",
+        "boundary": "Third-party MCP",
+        "untrusted_input": true,
+        "sensitive_data": true,
+        "external_action": true,
+        "approval": "none",
+        "reason": "mcp.json: '@acme/jira-mcp@1.4.2' with JIRA_PROJECT HRHELP. 'Tickets can be filed by any employee or contractor' makes the input untrusted. HR tickets likely contain PII. The description says 'Read' only, but the files do not list the server's actual tools, so it may expose write actions such as create, comment or transition; I assume external_action is true. Nothing marks it as requiring confirmation, so approval is none."
+      }
+    ],
+    "open_questions": [
+      "What model and provider sit behind 'hosted-llm', and where is it hosted?",
+      "What do prompts/askbot_system.md and its rules say? Prompt-only rules are not controls.",
+      "Who can edit the Confluence HR space?",
+      "Which tools does @acme/jira-mcp@1.4.2 expose? Does it include any write operations?",
+      "The memory is shared across all users with no review step. Could PII from payroll or email leak to other users, or could injected facts persist?",
+      "Does the agent have any outbound channel (for example a chat reply to an arbitrary user) that would let it exfiltrate payroll data to an unauthorized requester?",
+      "Is the Jira MCP server running via 'npx -y' integrity-checked?"
+    ]
+  },
+  {
+    "agent": "AskBot",
+    "description": "HR help-desk agent that searches the HR policy wiki, looks up payroll records, reads the hr-help@ shared inbox, and reads HRHELP Jira tickets via an MCP server. It stores persistent memory that is shared across users.",
+    "model": {
+      "name": "AskBot LLM",
+      "provider": "unknown (hosted-llm)",
+      "hosting": "third-party",
+      "system_prompt": "prompts/askbot_system.md (contents not provided)"
+    },
+    "user": {
+      "name": "Employee",
+      "boundary": "Corporate Network"
+    },
+    "memory": {
+      "persistent": true,
+      "write_policy": "none"
+    },
+    "tools": [
+      {
+        "name": "hr_policy_search",
+        "backend": "HR Policy Wiki (Confluence space HR)",
+        "backend_type": "datastore",
+        "boundary": "Internal Systems",
+        "untrusted_input": true,
+        "sensitive_data": true,
+        "external_action": false,
+        "approval": "none",
+        "reason": "agent.py: 'Search the internal HR policy wiki (Confluence space HR)'. The files do not say who can edit the wiki, so I assume pages may be written by many people (riskier answer). HR pages may contain internal or private content, also assumed. The tool is read-only. Approval is none because agent.py sets REQUIRE_CONFIRMATION = []."
+      },
+      {
+        "name": "payroll_lookup",
+        "backend": "Payroll DB",
+        "backend_type": "datastore",
+        "boundary": "Internal Systems",
+        "untrusted_input": false,
+        "sensitive_data": true,
+        "external_action": false,
+        "approval": "none",
+        "reason": "agent.py: 'Return salary, bank account and pay stubs'. It also notes 'any employee_id is accepted; the tool runs with AskBot's service account', so there is no per-user access control. The tool is read-only. Approval is none because agent.py has REQUIRE_CONFIRMATION = [] and states 'Every tool call runs automatically'."
+      },
+      {
+        "name": "read_email",
+        "backend": "hr-help@ shared inbox",
+        "backend_type": "external",
+        "boundary": "Internet",
+        "untrusted_input": true,
+        "sensitive_data": true,
+        "external_action": false,
+        "approval": "none",
+        "reason": "agent.py: 'Anyone, including people outside the company, can email this address', so outsiders control the content. HR emails likely contain employee PII. The tool is read-only. Approval is none because agent.py sets REQUIRE_CONFIRMATION = []."
+      }
+    ],
+    "mcp_servers": [
+      {
+        "name": "jira-mcp",
+        "version": "1.4.2",
+        "boundary": "Third-party MCP",
+        "untrusted_input": true,
+        "sensitive_data": true,
+        "external_action": true,
+        "approval": "none",
+        "reason": "mcp.json: '@acme/jira-mcp@1.4.2' and 'Tickets can be filed by any employee or contractor', so ticket content is untrusted. HR tickets likely contain PII. The description says 'Read', but the server's actual tool list is not shown and it may expose create or comment tools, so I assume it can write (riskier answer). Approval is none because there is no confirmation in agent.py (REQUIRE_CONFIRMATION = [])."
+      }
+    ],
+    "open_questions": [
+      "Contents of prompts/askbot_system.md are not provided.",
+      "Which provider and hosting sit behind MODEL 'hosted-llm'?",
+      "Who can edit the Confluence HR space?",
+      "What tools does @acme/jira-mcp@1.4.2 expose (any write or comment tools)? What credentials does it use?",
+      "Memory is shared across all users with no review before writes. Can payroll data or injected content end up in memory and leak to other users?",
+      "Does the agent have any outbound channel (e.g., replying to email) not shown in these files?"
+    ]
+  },
+  {
+    "agent": "AskBot",
+    "description": "HR help-desk assistant that searches the HR policy wiki, looks up payroll records, reads the hr-help@ shared inbox, and reads HRHELP Jira tickets through an MCP server. All tool calls run automatically, and it keeps persistent memory shared across users.",
+    "model": {
+      "name": "AskBot LLM",
+      "provider": "unknown (agent.py: MODEL = \"hosted-llm\")",
+      "hosting": "third-party",
+      "system_prompt": "Loaded from prompts/askbot_system.md (agent.py SYSTEM_PROMPT_FILE). The file's contents were not provided."
+    },
+    "user": {
+      "name": "Employee",
+      "boundary": "Corporate Network"
+    },
+    "memory": {
+      "persistent": true,
+      "write_policy": "none"
+    },
+    "tools": [
+      {
+        "name": "hr_policy_search",
+        "backend": "HR Policy Wiki (Confluence space HR)",
+        "backend_type": "datastore",
+        "boundary": "Internal Systems",
+        "untrusted_input": true,
+        "sensitive_data": true,
+        "external_action": false,
+        "approval": "none",
+        "reason": "agent.py describes it as 'Search the internal HR policy wiki (Confluence space HR)'. The files do not say who can edit the wiki, so pages written by others are treated as untrusted (riskier answer). Internal HR pages may contain private data, so sensitive is assumed. The tool is read-only search, so no external action. REQUIRE_CONFIRMATION = [] means no approval."
+      },
+      {
+        "name": "payroll_lookup",
+        "backend": "Payroll DB",
+        "backend_type": "datastore",
+        "boundary": "Internal Systems",
+        "untrusted_input": false,
+        "sensitive_data": true,
+        "external_action": false,
+        "approval": "none",
+        "reason": "agent.py says it will 'Return salary, bank account and pay stubs for an employee from the Payroll DB'. It also notes 'any employee_id is accepted; the tool runs with AskBot's service account', so there is no per-user access control. It is a read-only lookup. REQUIRE_CONFIRMATION = [] means no approval."
+      },
+      {
+        "name": "read_email",
+        "backend": "hr-help@ shared inbox",
+        "backend_type": "external",
+        "boundary": "Internet",
+        "untrusted_input": true,
+        "sensitive_data": true,
+        "external_action": false,
+        "approval": "none",
+        "reason": "agent.py says 'Anyone, including people outside the company, can email this address', so external senders control the content. An HR inbox likely holds employee PII. The tool only reads the newest messages. REQUIRE_CONFIRMATION = [] means no approval."
+      }
+    ],
+    "mcp_servers": [
+      {
+        "name": "jira-mcp",
+        "version": "1.4.2",
+        "boundary": "Third-party MCP",
+        "untrusted_input": true,
+        "sensitive_data": true,
+        "external_action": true,
+        "approval": "none",
+        "reason": "mcp.json runs '@acme/jira-mcp@1.4.2' against project HRHELP and states 'Tickets can be filed by any employee or contractor', so ticket content is untrusted. HR tickets likely contain PII. The description says 'Read', but the MCP server's full tool list is not shown, so write capability is assumed (riskier answer). It runs via npx -y, and nothing shows a confirmation step."
+      }
+    ],
+    "open_questions": [
+      "Contents of prompts/askbot_system.md were not provided.",
+      "Model provider and hosting location are unknown ('hosted-llm').",
+      "Exact tools exposed by @acme/jira-mcp@1.4.2: can it create or modify tickets or comments?",
+      "Who can edit the Confluence HR space?",
+      "Persistent memory is shared across all users with no review step, so payroll data or injected instructions could leak between users or persist across sessions.",
+      "Where do Jira credentials come from? None are shown in the mcp.json env."
+    ]
+  }
+]

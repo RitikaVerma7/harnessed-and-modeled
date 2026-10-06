@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "jira-mcp": {
+      "command": "npx",
+      "args": ["-y", "@acme/jira-mcp@1.4.2"],
+      "env": { "JIRA_URL": "https://acme.atlassian.net", "JIRA_PROJECT": "HRHELP" },
+      "description": "Read HR help-desk tickets. Tickets can be filed by any employee or contractor."
+    }
+  }
+}

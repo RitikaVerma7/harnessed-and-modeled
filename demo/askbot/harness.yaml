@@ -1,0 +1,62 @@
+# AskBot — internal HR assistant agent (same AskBot as DEF CON 33, now as an agent)
+# This file describes the MODEL + its HARNESS. tm.py turns it into a threat model.
+#
+# Tool tags (the "Rule of Two" properties):
+#   untrusted_input  - tool returns content an outsider can control (email, web, tickets)
+#   sensitive_data   - tool reads private data (PII, payroll, secrets)
+#   external_action  - tool changes state or sends data outside (email, HTTP, write APIs)
+#   approval         - none | human   (is a human asked before the tool runs?)
+
+agent: AskBot
+description: Internal HR assistant that answers employee questions about policy, payroll and tickets.
+
+model:
+  name: AskBot LLM
+  provider: hosted-llm
+  hosting: third-party      # third-party | self-hosted  (prompts and tool results go to the provider)
+  system_prompt: prompts/askbot_system.md
+
+user:
+  name: Employee
+  boundary: Corporate Network
+
+memory:
+  persistent: true          # remembers facts across sessions
+  write_policy: none        # none | reviewed
+
+tools:
+  - name: hr_policy_search
+    backend: HR Policy Docs
+    backend_type: datastore
+    boundary: Internal Systems
+    untrusted_input: false
+    sensitive_data: false
+    external_action: false
+    approval: none
+
+  - name: payroll_lookup
+    backend: Payroll DB
+    backend_type: datastore
+    boundary: Internal Systems
+    untrusted_input: false
+    sensitive_data: true
+    external_action: false
+    approval: none
+
+  - name: read_email
+    backend: Email Inbox
+    backend_type: external
+    boundary: Internet
+    untrusted_input: true
+    sensitive_data: false
+    external_action: false
+    approval: none
+
+mcp_servers:
+  - name: jira-mcp
+    version: "1.4.2"         # pinned
+    boundary: Third-party MCP
+    untrusted_input: true    # ticket text is written by anyone
+    sensitive_data: false
+    external_action: false
+    approval: none

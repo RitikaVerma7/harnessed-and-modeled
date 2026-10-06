@@ -1,0 +1,66 @@
+# AskBot v3 — the fix: send_email now needs human approval.
+# Diff this against harness_v2.yaml. One line changed.
+
+agent: AskBot
+description: Internal HR assistant that answers employee questions about policy, payroll and tickets.
+
+model:
+  name: AskBot LLM
+  provider: hosted-llm
+  hosting: third-party
+  system_prompt: prompts/askbot_system.md
+
+user:
+  name: Employee
+  boundary: Corporate Network
+
+memory:
+  persistent: true
+  write_policy: none
+
+tools:
+  - name: hr_policy_search
+    backend: HR Policy Docs
+    backend_type: datastore
+    boundary: Internal Systems
+    untrusted_input: false
+    sensitive_data: false
+    external_action: false
+    approval: none
+
+  - name: payroll_lookup
+    backend: Payroll DB
+    backend_type: datastore
+    boundary: Internal Systems
+    untrusted_input: false
+    sensitive_data: true
+    external_action: false
+    approval: none
+
+  - name: read_email
+    backend: Email Inbox
+    backend_type: external
+    boundary: Internet
+    untrusted_input: true
+    sensitive_data: false
+    external_action: false
+    approval: none
+
+  # --- NEW in this PR ---
+  - name: send_email
+    backend: External Recipients
+    backend_type: external
+    boundary: Internet
+    untrusted_input: false
+    sensitive_data: false
+    external_action: true
+    approval: human           # the fix: a human approves every email
+
+mcp_servers:
+  - name: jira-mcp
+    version: latest          # also changed: no longer pinned
+    boundary: Third-party MCP
+    untrusted_input: true
+    sensitive_data: false
+    external_action: false
+    approval: none
