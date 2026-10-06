@@ -14,19 +14,24 @@ Using **AskBot**, an example HR assistant agent, you will:
 
 ## Start here
 
-👉 **Follow [HANDS-ON.md](HANDS-ON.md).** It walks you through every step: what to run, what you should see, and what's happening. About 60–90 minutes; setup is section 1.
+Pick one:
+
+- **No setup, 15 minutes:** [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RitikaVerma7/harnessed-and-modeled/blob/main/hands-on.ipynb) Run the whole demo in your browser.
+- **The full hands-on, 60–90 minutes:** 👉 follow **[HANDS-ON.md](HANDS-ON.md)** on your own machine. Every step says what to run, what you should see, and what's happening. It also covers writing your own rule, CI, and using it on your own agent.
 
 ## What you need
 
-- Python 3.9 or newer, and a terminal
-- [Graphviz](https://graphviz.org/download/) (optional): draws the diagram as an image
-- An [Anthropic API key](https://console.anthropic.com) (optional): only for the AI steps in section 7. Without one, everything else works, and section 7c shows a copy-paste alternative.
+- For the Colab notebook: just a browser and a Google account
+- For HANDS-ON.md: Python 3.9 or newer, and a terminal
+  - plus [Graphviz](https://graphviz.org/download/) (optional), to draw the diagram as an image
+- Either way, an [Anthropic API key](https://console.anthropic.com) is optional: it's only for the AI steps (notebook part 5, HANDS-ON section 7). Without one, everything else works, and both show a copy-paste alternative.
 
 ## What's in here
 
 | Path | What it is |
 |---|---|
 | [HANDS-ON.md](HANDS-ON.md) | The step-by-step guide. Start here. |
+| [hands-on.ipynb](hands-on.ipynb) | The same demo as a Colab notebook, no setup |
 | [demo/](demo/) | The code you run, and the AskBot example. Run every command from inside `demo/`. |
 | [docs/references.md](docs/references.md) | Frameworks, tools and incidents from the talk |
 | `.github/workflows/` | A GitHub Actions check that fails a PR when it adds a HIGH attack path (HANDS-ON section 9) |
