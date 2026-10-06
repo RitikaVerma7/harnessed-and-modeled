@@ -6,7 +6,8 @@ The code you run. Run every command from this folder, with the virtual environme
 
 | File | What it is |
 |---|---|
-| `tm.py` | The threat model: `harness.yaml` → pytm model, data flow diagram, STRIDE, agent rules, PR diff gate. No AI. |
+| `tm.py` | The threat model: `harness.yaml` → pytm model, data flow diagram, STRIDE, PR diff gate. No AI. |
+| `rules.py` | **The agent rules** (Rule of Two and four more): the harness-specific findings. Add your own here. |
 | `ai.py` | The AI steps: draft `harness.yaml` from an agent's code, write abuse stories, check the answers. Needs `ANTHROPIC_API_KEY`. |
 | `requirements.txt` | `pip install -r requirements.txt` |
 | `askbot/agent/` | The example agent's code and `mcp.json`: what `ai.py draft` reads |

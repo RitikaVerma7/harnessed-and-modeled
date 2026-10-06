@@ -316,17 +316,19 @@ Either way, **`tm.py`'s output and exit code don't change**. That's why the rule
 
 ## 8. Read the code (20 min)
 
-Open `tm.py` and read it with this map (for `ai.py`, read `ask_claude`, `review` and the end of `cmd_explain`: those are the checks):
+There are three files. Read them with this map:
 
-| Lines (approx.) | Function | What it does |
+| File | Function | What it does |
 |---|---|---|
-| 33–58 | `load`, `components`, `flows` | Read the YAML; list tools and MCP servers; work out the arrows |
-| 60–113 | `build_pytm` | Turn the YAML into pytm objects (Actor, Process, Datastore, ExternalEntity, Boundary, Dataflow) |
-| 115–205 | `agent_findings` | **The agent rules.** R1 Rule of Two, R2 sensitive tool with no approval, R3 unpinned MCP, R4 memory poisoning, R5 data sent to the model provider |
-| 195–222 | `print_report` | The terminal output |
-| 224–234 | `write_dfd` | The diagram (`dfd.dot`, plus `dfd.png` if Graphviz is installed) |
-| 236–253 | `diff` | Compare two harness files; returns True if there's a new HIGH |
-| 255–end | `main` | Command-line options and exit codes |
+| **`rules.py`** | `components` | List every tool and MCP server with its four tags |
+| **`rules.py`** | `agent_findings` | **The agent rules.** R1 Rule of Two, R2 sensitive tool with no approval, R3 unpinned MCP, R4 memory poisoning, R5 data sent to the model provider. The table at the top of the file summarizes them. |
+| `tm.py` | `load`, `flows` | Read the YAML; work out the arrows |
+| `tm.py` | `build_pytm` | Turn the YAML into pytm objects (Actor, Process, Datastore, ExternalEntity, Boundary, Dataflow) |
+| `tm.py` | `print_report`, `write_dfd` | The terminal output and the diagram |
+| `tm.py` | `diff` | Compare two harness files; returns True if a finding is newly HIGH |
+| `ai.py` | `ask_claude`, `review`, end of `cmd_explain` | The AI calls, and the checks on the AI's answers |
+
+`tm.py` is the pytm part; `rules.py` is the agent-specific part.
 
 **Key lines in the Rule of Two (R1):**
 ```python
@@ -339,7 +341,7 @@ sinks     = [c for c in cs if c.get("external_action")]
 
 ### Exercise: write your own rule
 
-Add this just **above** the line `# R4 persistent memory written from untrusted context` inside `agent_findings` (R5 is already taken):
+Open **`rules.py`** and add this just **above** the line `# R4 persistent memory written from untrusted context` inside `agent_findings` (R5 is already taken):
 
 ```python
     # R6 (my rule) external action with no approval at all
