@@ -6,33 +6,22 @@ All expected outputs below come from real runs.
 
 ---
 
-## 0. The big picture (read first, 2 min)
+## 0. The idea (1 min)
+
+An AI agent is a **model plus a harness**: the tools, MCP servers, permissions and memory that let it act. The model is where things go wrong (prompt injection); the harness decides how bad it gets.
+
+The main rule is Meta's **Rule of Two**: one agent should not combine *untrusted input*, *sensitive data* and *external action* unless a human approves the risky step.
+
+The harness is written down in code and config, so the threat model can be generated from it and re-run on every change:
 
 ```
-askbot/agent/ (code) ──► ai.py draft ──► harness.draft.yaml   (AI drafts, you review)
-askbot/harness.yaml          you describe the agent: model, tools, MCP servers, memory
-        │
-        ▼
-tm.py ──► 1. builds a pytm model (boxes, arrows, trust boundaries) ──► dfd.png
-     ──► 2. pytm checks every box/arrow against its threat library ──► "STRIDE threats"
-     ──► 3. tm.py's own agent rules look for dangerous combinations ──► "attack paths"
-        │
-        ▼
---json findings.json ──► ai.py explain ──► abuse stories, checked against the findings
---diff old.yaml new.yaml ──► what changed? exit code 1 if a new HIGH appears ──► CI gate
+askbot/agent/ (code) ──► ai.py draft ──► harness.yaml  (AI drafts, you review)
+harness.yaml ──► tm.py ──► diagram + STRIDE threats + agent attack paths
+findings     ──► ai.py explain ──► abuse stories, checked against the findings
+tm.py --diff old new ──► exit code 1 on a new HIGH ──► a failed CI check
 ```
 
-**The files you'll touch:**
-
-| File | What it is |
-|---|---|
-| `demo/askbot/harness.yaml` | AskBot v1: the "before" |
-| `demo/askbot/harness_v2.yaml` | AskBot v2: adds `send_email`, unpins the MCP server |
-| `demo/tm.py` | The rules engine (~300 lines of Python, no AI) |
-| `demo/ai.py` | The AI steps: draft the harness from code, explain findings, check the answers |
-| `demo/askbot/agent/` | AskBot's "real" code and `mcp.json`: what `ai.py draft` reads |
-| `demo/prompts/attack_paths.md` | The prompt for the LLM step |
-| `.github/workflows/threat-model.yml` | Optional: runs the diff on GitHub PRs |
+The rules decide what's risky. The LLM only explains it.
 
 ---
 
@@ -56,14 +45,12 @@ python -c "import pytm, yaml; print('ok')"
 ```
 You should see `ok`.
 
-**Install Graphviz** (draws the diagram as an image):
+**Install Graphviz** (optional, draws the diagram as an image):
 ```bash
-brew install graphviz
+brew install graphviz        # Linux: sudo apt install graphviz
 dot -V
 ```
 `dot -V` should print a version. If you skip Graphviz, everything still works, but you get a text file `dfd.dot` instead of `dfd.png`.
-
-> **Note:** `pip install pytm` installs pytm **1.3.1** (the latest on PyPI). Newer GitHub-only versions have an `LLM` element; this demo doesn't need it.
 
 ---
 
@@ -395,6 +382,16 @@ Then remove it again (or keep it, it's your tool now).
 2. Read every tag and fix what's wrong. The four questions in section 2 are the whole input.
 3. Run `python tm.py my_agent.yaml --dfd` and read the agent findings.
 4. Copy `.github/workflows/threat-model.yml` into your agent's repo and point it at your harness file.
+
+---
+
+## Limits (read before you rely on it)
+
+- **No finding is not the same as safe.** A clean run means no known pattern matched.
+- **The tags are the trust assumptions.** One wrong tag can hide a HIGH (experiment D).
+- **A rule in the system prompt is not a control.** Count only what the harness enforces in code.
+- **pytm's STRIDE library is generic.** The agent rules carry the harness-specific signal.
+- **The AI can be wrong, and can be attacked.** That's why a human reviews the draft, and the rules, not the LLM, set severity.
 
 ---
 
