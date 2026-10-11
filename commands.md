@@ -1,4 +1,4 @@
-# Demo commands
+# Commands
 
 ## 0. Setup
 Turn on the Python environment and go to the demo folder. Do this once per Terminal window, before recording.
