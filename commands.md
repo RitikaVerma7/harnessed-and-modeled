@@ -44,7 +44,7 @@ clear && python tm.py --diff askbot/harness.yaml askbot/harness_v2.yaml; echo "e
 The AI writes an abuse story for each finding.
 Code checks nothing was dropped, invented or downgraded.
 ```bash
-clear && python tm.py askbot/harness_v2.yaml --json findings.json > /dev/null && python ai.py explain findings.json --brief
+clear; python tm.py askbot/harness_v2.yaml --json findings.json > /dev/null; python ai.py explain findings.json --brief
 ```
 
 ## 6. Try to prompt-inject the threat modeler
