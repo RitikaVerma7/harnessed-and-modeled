@@ -39,14 +39,21 @@ def ask_claude(prompt, schema):
     import anthropic
     client = anthropic.Anthropic()
     print(f"(asking {MODEL}...)", file=sys.stderr)
-    resp = client.beta.messages.create(
-        model=MODEL,
-        max_tokens=16000,
-        betas=["server-side-fallback-2026-07-01"],
-        fallbacks="default",                  # if a safety classifier declines, retry on the recommended model
-        output_config={"effort": "medium", "format": {"type": "json_schema", "schema": schema}},
-        messages=[{"role": "user", "content": prompt}],
-    )
+    try:
+        resp = client.beta.messages.create(
+            model=MODEL,
+            max_tokens=16000,
+            betas=["server-side-fallback-2026-07-01"],
+            fallbacks="default",              # if a safety classifier declines, retry on the recommended model
+            output_config={"effort": "medium", "format": {"type": "json_schema", "schema": schema}},
+            messages=[{"role": "user", "content": prompt}],
+        )
+    except anthropic.AuthenticationError:
+        sys.exit("The API key was rejected (401). Check ANTHROPIC_API_KEY: it should be an API key from "
+                 "console.anthropic.com (starts with sk-ant-), with no spaces or quotes. "
+                 "Or use --replay with a saved answer.")
+    except anthropic.APIConnectionError:
+        sys.exit("Could not reach the API (network). Use --replay with a saved answer.")
     if resp.stop_reason == "refusal":
         sys.exit("The model declined this request. Use --replay with a saved answer.")
     if resp.stop_reason == "max_tokens":
@@ -138,6 +145,28 @@ def components(h):
     return [("tool", c) for c in h.get("tools", [])] + [("mcp", c) for c in h.get("mcp_servers", [])]
 
 
+# Each run phrases the same open question differently. Merge questions that share most of
+# their words (compared against the shorter one), so the count reflects distinct questions.
+STOP_WORDS = set("a an the and or of to for in on with by is are was were be it its this that these those "
+                 "what which who where when how does do can could any not no from as at there their they "
+                 "them via into than then also only just".split())
+
+
+def question_words(q):
+    ws = re.findall(r"[a-z0-9@._-]+", q.lower())
+    return {w.rstrip("s") if len(w) > 3 else w for w in ws if w not in STOP_WORDS and len(w) > 2}
+
+
+def merge_similar(questions, threshold=0.4):
+    kept = []
+    for q in questions:
+        w = question_words(q)
+        if not any(len(w & question_words(k)) / max(1, min(len(w), len(question_words(k)))) >= threshold
+                   for k in kept):
+            kept.append(q)
+    return kept
+
+
 def vote(runs):
     """Merge several drafts of the same agent. Where the runs disagree, keep the riskier value and flag it."""
     draft, flags, n = runs[0], [], len(runs)
@@ -166,7 +195,7 @@ def vote(runs):
     if len({r["model"]["hosting"] for r in runs}) > 1:
         draft["model"]["hosting"] = "third-party"
         flags.append("model: runs disagree on hosting; using third-party")
-    draft["open_questions"] = list(dict.fromkeys(q for r in runs for q in r.get("open_questions", [])))
+    draft["open_questions"] = merge_similar(q for r in runs for q in r.get("open_questions", []))
     return draft, flags
 
 

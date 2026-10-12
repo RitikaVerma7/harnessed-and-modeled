@@ -16,22 +16,22 @@ Using **AskBot**, an example HR assistant agent, you will:
 
 Pick one:
 
-- **No setup, 15 minutes:** [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RitikaVerma7/harnessed-and-modeled/blob/main/hands-on.ipynb) Run the whole demo in your browser.
-- **The full hands-on, 60–90 minutes:** 👉 follow **[HANDS-ON.md](HANDS-ON.md)** on your own machine. Every step says what to run, what you should see, and what's happening. It also covers writing your own rule, CI, and using it on your own agent.
+- **No setup, in your browser:** [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RitikaVerma7/harnessed-and-modeled/blob/main/hands-on.ipynb) The demo (parts 1–5, about 15 minutes), then keep going with more exercises (parts 6–10).
+- **On your own machine:** 👉 follow **[HANDS-ON.md](HANDS-ON.md)**. Sections 0–5 are the demo, sections 6–10 the same exercises as the notebook's parts 6–10, plus running it in GitHub CI.
 
 ## What you need
 
 - For the Colab notebook: just a browser and a Google account
 - For HANDS-ON.md: Python 3.9 or newer, and a terminal
   - plus [Graphviz](https://graphviz.org/download/) (optional), to draw the diagram as an image
-- Either way, an [Anthropic API key](https://console.anthropic.com) is optional: it's only for the AI steps (notebook part 5, HANDS-ON section 7). Without one, everything else works, and both show a copy-paste alternative.
+- Either way, an [Anthropic API key](https://console.anthropic.com) is optional: it's only for the AI steps (notebook parts 5, 8 and 10; HANDS-ON sections 5 and 8). Without one, everything else works, and both show a copy-paste alternative.
 
 ## What's in here
 
 | Path | What it is |
 |---|---|
 | [HANDS-ON.md](HANDS-ON.md) | The step-by-step guide. Start here. |
-| [hands-on.ipynb](hands-on.ipynb) | The same demo as a Colab notebook, no setup |
+| [hands-on.ipynb](hands-on.ipynb) | The demo and the exercises as a Colab notebook, no setup |
 | [demo/](demo/) | The code you run, and the AskBot example. Run every command from inside `demo/`. |
 | [docs/references.md](docs/references.md) | Frameworks, tools and incidents from the talk |
 | `.github/workflows/` | A GitHub Actions check that fails a PR when it adds a HIGH attack path (HANDS-ON section 9) |
