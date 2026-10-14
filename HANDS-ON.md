@@ -250,7 +250,56 @@ Run `python tm.py askbot/harness_v2.yaml`. You should see:
          path: AskBot LLM -> send_email
 ```
 
-**Your own:** write a rule that flags any tool with `untrusted_input: true` that the agent can also write to memory from. Or one for a tool name containing `exec` or `shell` (code execution).
+### 9b. Your turn: a rule for skills and plugins
+
+Agents increasingly load **skills and plugins**: add-ons with their own instructions and code, often from a marketplace. They run with the agent's tools and permissions, and the current rules don't look at them.
+
+**1. Give AskBot a skill.** Copy the v2 harness and add this at the bottom of `my.yaml` (no indentation before `skills:`):
+```bash
+cp askbot/harness_v2.yaml my.yaml && open -e my.yaml
+```
+```yaml
+skills:
+  - name: expense-report
+    source: marketplace      # marketplace | internal
+    version: latest
+    reviewed: false
+```
+
+**2. Write rule R7** in `rules.py`, above `# R4 persistent memory written from untrusted context`. It should flag a skill whose `source` isn't `internal` **and** that is either unpinned (`latest`, empty, or a range like `^2.0`) or not reviewed. Use R3 (the MCP pinning rule) as a model. Start from:
+```python
+    # R7 (my rule) third-party skills and plugins
+    for sk in h.get("skills", []):
+        # TODO: if this is a third-party skill that is unpinned or not reviewed, append a finding
+        pass
+
+```
+
+**3. Test it:** `python tm.py my.yaml` should show your new finding. Then pin the version **and** set `reviewed: true` (or `source: internal`), and it should disappear.
+
+<details>
+<summary>One solution</summary>
+
+```python
+    # R7 (my rule) third-party skills and plugins
+    for sk in h.get("skills", []):
+        version = str(sk.get("version", "")).strip()
+        unpinned = not version or version == "latest" or version[0] in "^~*>"
+        if sk.get("source") != "internal" and (unpinned or not sk.get("reviewed")):
+            out.append({
+                "id": f"SKILL:{sk['name']}", "severity": "MEDIUM",
+                "rule": "Third-party skill not pinned or not reviewed",
+                "owasp": "ASI04 Agentic Supply Chain",
+                "path": f"{sk['name']} -> {model}",
+                "why": "A skill's instructions and code run with the agent's tools and permissions. "
+                       "If it's unpinned or unreviewed, it can change under you.",
+                "mitigation": "Pin the version, review its instructions and code, and limit which tools it can call.",
+            })
+
+```
+</details>
+
+**More ideas:** a rule for a tool name containing `exec` or `shell` (code execution), or for a tool with `untrusted_input: true` whose output can be written to persistent memory.
 
 ---
 
